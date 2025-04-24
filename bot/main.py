@@ -23,9 +23,15 @@ glv.dp = Dispatcher(storage=glv.storage)
 app = web.Application()
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
+
+
 async def on_startup(bot: Bot):
-    await bot.set_webhook(f"{glv.config['WEBHOOK_URL']}/webhook")
+    await bot.set_webhook(f"{glv.config['WEBHOOK_URL']}/webhook/")
     asyncio.create_task(register())
+
+async def on_shutdown(bot: Bot):
+    await bot.delete_webhook(f"{glv.config['WEBHOOK_URL']}/webhook/")
+    logging.info("Webhook has been deleted")
 
 def setup_routers():
     register_commands(glv.dp)
@@ -42,6 +48,7 @@ async def main():
     setup_routers()
     setup_middlewares()
     glv.dp.startup.register(on_startup)
+   
 
     app.router.add_post("/cryptomus_payment", check_crypto_payment)
     app.router.add_post("/yookassa_payment", check_yookassa_payment)
@@ -50,7 +57,7 @@ async def main():
         dispatcher=glv.dp,
         bot=glv.bot,
     )
-    webhook_requests_handler.register(app, path="/webhook")
+    webhook_requests_handler.register(app, path="/webhook/")
 
     setup_application(app, glv.dp, bot=glv.bot)
     await web._run_app(app, host="0.0.0.0", port=glv.config['WEBHOOK_PORT'])

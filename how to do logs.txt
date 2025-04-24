@@ -1,0 +1,1 @@
+docker logs -f marzban-shop-bot-1 > log.txt 2>&1

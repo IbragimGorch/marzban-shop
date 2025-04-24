@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup,  WebAppInfo
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.i18n import gettext as _
 
@@ -9,7 +9,7 @@ def get_subscription_keyboard(subscription_url) -> InlineKeyboardMarkup:
     builder.row(
         InlineKeyboardButton(
             text=_("Follow 🔗"),
-            web_app=WebAppInfo(url=subscription_url)
+            url=subscription_url
         )
     )
     return builder.as_markup()

@@ -133,12 +133,3 @@ msgstr ""
 #: bot/keyboards/subscription.py:11
 msgid "Follow 🔗"
 msgstr ""
-
-
-msgid ""
-"Hello, {name} 👋 \n"
-"\n"
-"Just a reminder, your VPN subscription is ending very soon ⏰\n"
-"\n"
-"To avoid disconnection, please renew it now via the \"Pay 🏄🏻‍♂️\" section."
-msgstr ""

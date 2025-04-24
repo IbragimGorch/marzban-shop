@@ -46,7 +46,7 @@ msgstr ""
 msgid ""
 "Your profile is not active at the moment.\n️"
 "\n"
-"You can choose \"1 day free 🆓\" or \"Pay 🏄🏻‍♂️\"."
+"You can choose \"5 days free 🆓\" or \"Join 🏄🏻‍♂️\"."
 msgstr ""
 
 #: bot/handlers/messages.py:41
@@ -88,7 +88,7 @@ msgid "{title} - {price_ru}₽"
 msgstr ""
 
 #: bot/keyboards/main_menu.py:11
-msgid "Pay 🏄🏻‍♂️"
+msgid "Join 🏄🏻‍♂️"
 msgstr ""
 
 #: bot/keyboards/main_menu.py:14
@@ -108,7 +108,7 @@ msgid "Follow the <a href=\"{link}\">link</a> 🔗"
 msgstr ""
 
 #: bot/keyboards/main_menu.py:23
-msgid "1 day free 🆓"
+msgid "5 days free 🆓"
 msgstr ""
 
 #: bot/keyboards/pay.py:9
@@ -127,18 +127,9 @@ msgid ""
 "\n"
 "Your VPN subscription expires at the end of the day tomorrow.\n️"
 "\n"
-"To renew it, just go to the \"Pay 🏄🏻‍♂️\" section and make a payment."
+"To renew it, just go to the \"Join 🏄🏻‍♂️\" section and make a payment."
 msgstr ""
 
 #: bot/keyboards/subscription.py:11
 msgid "Follow 🔗"
-msgstr ""
-
-
-msgid ""
-"Hello, {name} 👋 \n"
-"\n"
-"Just a reminder, your VPN subscription is ending very soon ⏰\n"
-"\n"
-"To avoid disconnection, please renew it now via the \"Pay 🏄🏻‍♂️\" section."
 msgstr ""

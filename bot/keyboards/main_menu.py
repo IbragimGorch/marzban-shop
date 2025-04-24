@@ -8,7 +8,7 @@ def get_main_menu_keyboard(lang=None) -> ReplyKeyboardMarkup:
     if lang is None:
         kb = [
             [
-                KeyboardButton(text=_("Join 🏄🏻‍♂️")),
+                KeyboardButton(text=_("Pay 🏄🏻‍♂️")),
             ],
             [
                 KeyboardButton(text=_("My subscription 👤")),
@@ -20,12 +20,12 @@ def get_main_menu_keyboard(lang=None) -> ReplyKeyboardMarkup:
         ]
         
         if glv.config['TEST_PERIOD']:
-            kb.insert(0, [KeyboardButton(text=_("5 days free 🆓")),])
+            kb.insert(0, [KeyboardButton(text=_("1 day free 🆓")),])
         
         return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
     kb = [
         [
-            KeyboardButton(text=get_i18n_string("Join 🏄🏻‍♂️", lang)),
+            KeyboardButton(text=get_i18n_string("Pay 🏄🏻‍♂️", lang)),
         ],
         [
             KeyboardButton(text=get_i18n_string("My subscription 👤", lang)),
@@ -37,6 +37,6 @@ def get_main_menu_keyboard(lang=None) -> ReplyKeyboardMarkup:
     ]
         
     if glv.config['TEST_PERIOD']:
-        kb.insert(0, [KeyboardButton(text=get_i18n_string("5 days free 🆓", lang)),])
+        kb.insert(0, [KeyboardButton(text=get_i18n_string("1 day free 🆓", lang)),])
 
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)   

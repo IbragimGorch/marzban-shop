@@ -20,22 +20,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def notify_users_day_before():
-    logger.debug("Running day-before notification check...")
-    users = await get_marzban_users_to_notify_day_before()
-    logger.debug(f"Users to notify (day before): {users}")
-    if users:
-        await send_notifications(users, "day")
 
+async def notify_users_to_renew_sub():
+    logger.debug("Checking users to notify (day before)...")
+    marzban_users_day_before = await get_marzban_users_to_notify_day_before()
+    logger.debug(f"Users to notify (day before): {marzban_users_day_before}")
 
-async def notify_users_3_hours_before():
-    logger.debug("Running 3-hours-before notification check...")
-    users = await get_marzban_users_to_notify_2_hours_before()
-    logger.debug(f"Users to notify (2 hours before): {users}")
-    if users:
-        await send_notifications(users, "2hour")
+    logger.debug("Checking users to notify (2 hours before)...")
+    marzban_users_2_hours_before = await get_marzban_users_to_notify_2_hours_before()
+    logger.debug(f"Users to notify (2 hours before): {marzban_users_2_hours_before}")
 
-
+    if marzban_users_day_before:
+        await send_notifications(marzban_users_day_before, "day")
+    if marzban_users_2_hours_before:
+        await send_notifications(marzban_users_2_hours_before, "2hour")
 async def send_notifications(users_to_notify, mode):
     try:
         list_vpn_id = [user["username"] for user in users_to_notify]
@@ -70,12 +68,13 @@ async def send_notifications(users_to_notify, mode):
                     chat_member.user.language_code
                 ).format(name=chat_member.user.first_name)
 
-
             await glv.bot.send_message(user.tg_id, message)
 
     except Exception as e:
         logger.error(f"? error sending notification: {e}", exc_info=True)
 
+
+# New time filter functions
 
 async def get_marzban_users_to_notify_day_before():
     res = await marzban_api.panel.get_users()
@@ -84,9 +83,7 @@ async def get_marzban_users_to_notify_day_before():
     users = res['users']
     for user in users:
         logger.debug(f"User: {user['username']} expires at {user.get('expire')}")
-    return list(filter(filter_users_to_notify_day_before, users))
-
-
+        return list(filter(filter_users_to_notify_day_before, users))
 def filter_users_to_notify_day_before(user):
     user_expire_date = user.get('expire')
     if user_expire_date is None:
@@ -100,7 +97,6 @@ def filter_users_to_notify_day_before(user):
     logger.debug(f"[Day Filter] {user['username']} ? {user_expire_date}, in range: {in_range}")
     return in_range
 
-
 async def get_marzban_users_to_notify_2_hours_before():
     res = await marzban_api.panel.get_users()
     if res is None:
@@ -108,8 +104,7 @@ async def get_marzban_users_to_notify_2_hours_before():
     users = res['users']
     for user in users:
         logger.debug(f"User: {user['username']} expires at {user.get('expire')}")
-    return list(filter(filter_users_to_notify_2_hours_before, users))
-
+        return list(filter(filter_users_to_notify_day_before, users))
 
 def filter_users_to_notify_2_hours_before(user):
     user_expire_date = user.get('expire')
@@ -121,7 +116,10 @@ def filter_users_to_notify_2_hours_before(user):
     logger.debug(f"[2 Hour Filter] {user['username']} ? {user_expire_date}, in range: {in_range}")
     return in_range
 
-
 if __name__ == "__main__":
     current_time = int(time.time())
     logger.debug(f"Current time: {current_time}")
+
+    import asyncio
+
+

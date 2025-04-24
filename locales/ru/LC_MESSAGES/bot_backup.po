@@ -162,17 +162,3 @@ msgstr "Перейти 🔗"
 
 #~ msgid "Tariff - {title}"
 #~ msgstr "Тариф - {title}"
-
-msgid ""             
-"Hello, {name} 👋 \n"
-"\n"
-"Just a reminder, your VPN subscription is ending very soon ⏰\n"
-"\n"
-"To avoid disconnection, please renew it now via the \"Pay 🏄🏻‍♂️\" section."
-
-msgstr ""
-"Привет, {name} 👋 \n"
-"\n"
-"Напоминаем, что ваша подписка на VPN скоро закончится ⏰\n"
-"\n"
-"Чтобы избежать отключения, пожалуйста, продлите её сейчас через раздел \"Оплатить 🏄🏻‍♂️\"."

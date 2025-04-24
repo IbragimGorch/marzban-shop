@@ -1,0 +1,44 @@
+import asyncio
+import mysql.connector
+from telegram import Bot
+
+# Configuration
+DB_CONFIG = {
+    'host': '127.0.0.1',     # Change to your database host
+    'user': 'Ibragim',     # Change to your database username
+    'password': 'Gobi7890!!', # Change to your database password
+    'database': 'marzbanbot'    # Change to your database name
+}
+BOT_TOKEN = '7763974515:AAHut8I12a832Ujph4RViXnFQ8Qh9uobr58'  # Replace with your bot's token
+MESSAGE = 'Технические работы завершены. Пожалуйста обновите подписку! \n Подробная инструкция по ссылкам:\n 1. Для Android - https://t.me/shadowpathvpn/16/71 \n 2. Для iOS - https://t.me/shadowpathvpn/16/73 \n При возникновении вопросов - https://t.me/shadowpathvpn/6'  # Your message
+
+async def fetch_chat_ids():
+    """Fetch all chat IDs from the database."""
+    connection = mysql.connector.connect(**DB_CONFIG)
+    cursor = connection.cursor()
+    cursor.execute("SELECT tg_id FROM vpnusers WHERE tg_id IS NOT NULL")
+    chat_ids = [row[0] for row in cursor.fetchall()]
+    cursor.close()
+    connection.close()
+    return chat_ids
+
+async def send_broadcast(chat_ids, bot, message):
+    """Send a message to all chat IDs asynchronously."""
+    for chat_id in chat_ids:
+        try:
+            await bot.send_message(chat_id=chat_id, text=message)
+            print(f"Message sent to {chat_id}")
+        except Exception as e:
+            print(f"Failed to send message to {chat_id}: {e}")
+        await asyncio.sleep(0.1)
+
+async def main():
+    bot = Bot(token=BOT_TOKEN)
+    chat_ids = await fetch_chat_ids()
+    if chat_ids:
+        await send_broadcast(chat_ids, bot, MESSAGE)
+    else:
+        print("No chat IDs found.")
+
+if __name__ == "__main__":
+    asyncio.run(main())
