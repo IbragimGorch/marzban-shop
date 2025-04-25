@@ -5,52 +5,34 @@ from aiogram import Dispatcher
 from aiogram.types import CallbackQuery
 from aiogram.utils.i18n import gettext as _
 from aiogram.utils.i18n import lazy_gettext as __
+from utils.goods import get as get_good
+from utils.yookassa import create_payment
 
 from keyboards import get_payment_keyboard, get_pay_keyboard
 from utils import goods, yookassa, cryptomus
 
 router = Router(name="callbacks-router") 
 
-@router.callback_query(F.data.startswith("pay_kassa_"))
-async def callback_payment_method_select(callback: CallbackQuery):
+@router.callback_query(F.data.startswith("buy_"))
+async def process_purchase(callback: CallbackQuery):
     await callback.message.delete()
-    data = callback.data.replace("pay_kassa_", "")
-    if data not in goods.get_callbacks():
-        await callback.answer()
-        return
-    result = await yookassa.create_payment(
-        callback.from_user.id, 
-        data, 
-        callback.message.chat.id, 
-        callback.from_user.language_code)
+    code = callback.data.split("_", 1)[1]  # e.g. 'month1'
+    good = get_good(code)
+    if not good:
+        return await callback.answer()
+    # create payment
+    result = await create_payment(
+        callback.from_user.id,
+        code,
+        callback.message.chat.id,
+        callback.from_user.language_code
+    )
+    # send payment link
     await callback.message.answer(
-        _("To be paid - {amount}₽ ⬇️").format(
-            amount=result['amount']
-        ),
-        reply_markup=get_pay_keyboard(result['url']))
+        f"Перейдите по ссылке для оплаты ({good['title']}):\n{result['url']}"
+    )
     await callback.answer()
 
-@router.callback_query(F.data.startswith("pay_crypto_"))
-async def callback_payment_method_select(callback: CallbackQuery):
-    await callback.message.delete()
-    data = callback.data.replace("pay_crypto_", "")
-    if data not in goods.get_callbacks():
-        await callback.answer()
-        return
-    result = await cryptomus.create_payment(
-        callback.from_user.id, 
-        data, 
-        callback.message.chat.id, 
-        callback.from_user.language_code)
-    now = datetime.now()
-    expire_date = (now + timedelta(minutes=60)).strftime("%d/%m/%Y, %H:%M")
-    await callback.message.answer(
-        _("To be paid - {amount}$ ⬇️").format(
-            amount=result['amount'],
-            date=expire_date
-        ),
-        reply_markup=get_pay_keyboard(result['url']))
-    await callback.answer()
 
 @router.callback_query(lambda c: c.data in goods.get_callbacks())
 async def callback_payment_method_select(callback: CallbackQuery):

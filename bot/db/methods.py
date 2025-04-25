@@ -8,14 +8,14 @@ import glv
 
 engine = create_async_engine(glv.config['DB_URL'])
 
-async def create_vpn_profile(tg_id: int):
+async def create_vpn_profile(tg_id: int, vpn_id: str):
     async with engine.connect() as conn:
         sql_query = select(VPNUsers).where(VPNUsers.tg_id == tg_id)
         result: VPNUsers = (await conn.execute(sql_query)).fetchone()
         if result != None:
             return
-        hash = hashlib.md5(str(tg_id).encode()).hexdigest()
-        sql_query = insert(VPNUsers).values(tg_id=tg_id, vpn_id=hash)
+         # store full serial as vpn_id
+        sql_query = insert(VPNUsers).values(tg_id=tg_id, vpn_id=vpn_id)
         await conn.execute(sql_query)
         await conn.commit()
 

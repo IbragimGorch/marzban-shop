@@ -1,6 +1,9 @@
 import os
 import logging
 
+
+from utils.marzban_api import find_user_by_last4, generate_marzban_subscription
+from utils.goods import get, get_callbacks
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -37,41 +40,43 @@ async def cmd_start(message: types.Message, state: FSMContext):
 # --- Serial input and user verification ---
 @dp.message_handler(state=SerialState.waiting_for_serial)
 async def process_serial(message: types.Message, state: FSMContext):
-    serial = message.text.strip()
-    if not serial.isdigit() or len(serial) != 4:
-        return await message.reply("❌ Некорректный формат. Введите ровно 4 цифры серийного номера.")
-    full_username = serial  # Assuming username equals full serial number
-    headers = {
-        "Authorization": f"Bearer {PANEL_API_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    # Проверяем наличие пользователя в панели Marzban
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{PANEL_HOST}/api/users/{full_username}", headers=headers) as resp:
-            if resp.status != 200:
-                await message.answer(
-                    "❌ Пользователь с таким серийным номером не найден. Проверьте ввод и попробуйте снова."
-                )
-                await state.finish()
-                return
-            user = await resp.json()
+    serial4 = message.text.strip()
+    if not serial4.isdigit() or len(serial4) != 4:
+        return await message.reply("❌ Некорректный формат. Введите ровно 4 цифры.")
+    # find user in panel by last4
+    try:
+        user = await find_user_by_last4(serial4)
+    except Exception as e:
+        return await message.reply("❌ Ошибка при обращении к панели, попробуйте позже.")
+    if not user:
+        return await message.reply("❌ Пользователь не найден. Проверьте цифры и повторите.")
+    # save mapping in local DB
+    from db.methods import create_vpn_profile
+    await create_vpn_profile(message.from_user.id, user['username'])
+    # save data in state for reference if needed
+    await state.update_data(serial4=serial4, full_serial=user['username'])
+    # show buy menu
+    await message.answer(
+        f"✅ Серийник подтверждён! Привет, {user.get('name', user['username'])}!\nВыберите подписку:",
+        reply_markup=generate_products_keyboard()
+    )
+    await state.finish()
     # Сохраняем контекст
     await state.update_data(serial=serial, user=user)
     await message.answer(
-        f"✅ Серийный номер подтверждён! Привет, {user.get('name', full_username')}! Выберите VPN-подписку для покупки:",
+        f"✅ Серийный номер подтверждён! Привет, {user.get('name', 'full_username')}! Выберите VPN-подписку для покупки:",
         reply_markup=generate_products_keyboard()
     )
     await state.finish()
 
-# --- Generate inline keyboard for products ---
-def generate_products_keyboard():
-    # Здесь нужно получить список товаров из панельного API или локального файла
-    # Пример статического списка:
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton("1 месяц - $5", callback_data="buy_1m"))
-    keyboard.add(types.InlineKeyboardButton("3 месяца - $12", callback_data="buy_3m"))
-    keyboard.add(types.InlineKeyboardButton("12 месяцев - $40", callback_data="buy_12m"))
-    return keyboard
+def generate_products_keyboard() -> types.InlineKeyboardMarkup:
+    kb = types.InlineKeyboardMarkup()
+    goods = get()  # load list from goods.json
+    for item in goods:
+        title = item['title']
+        cb = f"buy_{item['callback']}"
+        kb.add(types.InlineKeyboardButton(f"{title}", callback_data=cb))
+    return kb
 
 # --- Callback для покупки ---
 @dp.callback_query_handler(lambda c: c.data.startswith('buy_'))

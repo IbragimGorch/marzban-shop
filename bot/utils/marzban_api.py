@@ -162,3 +162,16 @@ def get_test_subscription(hours: int, additional= False) -> int:
 
 def get_subscription_end_date(months: int, additional = False) -> int:
     return (0 if additional else int(time.time())) + 60 * 60 * 24 * 30 * months
+
+async def find_user_by_last4(last4: str) -> dict | None:
+    """
+    Search all users in Marzban panel and return first whose username ends with last4 digits.
+    """
+    # get token if not yet
+    if not hasattr(panel, "token"):
+        panel.get_token()
+    users = await panel.get_users()  # list of user dicts
+    for u in users:
+        if isinstance(u.get("username"), str) and u["username"].endswith(last4):
+            return u
+    return None
