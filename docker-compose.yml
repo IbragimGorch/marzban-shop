@@ -1,11 +1,10 @@
-version: '3'
 services:
-    bot:
-        build: .
-        restart: always
-        stop_signal: SIGINT
-        network_mode: host
-        environment:
+  bot:
+    build: .
+    restart: always
+    stop_signal: SIGINT
+    network_mode: host
+    environment:
             BOT_TOKEN: ${BOT_TOKEN}
             SHOP_NAME: ${SHOP_NAME}
             PROTOCOLS: ${PROTOCOLS}
@@ -30,6 +29,8 @@ services:
             WEBHOOK_URL: ${WEBHOOK_URL}
             WEBHOOK_PORT: ${WEBHOOK_PORT}
             RENEW_NOTIFICATION_TIME: ${RENEW_NOTIFICATION_TIME}
-        volumes:
-            - "./goods.json:/app/goods.json"
-            - "./locales:/app/locales"
+    volumes:
+      - "./goods.json:/app/goods.json"
+      - "./locales:/app/locales"
+
+

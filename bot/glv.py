@@ -14,6 +14,7 @@ config = {
     'DB_URL': f"mysql+asyncmy://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASS')}@{os.environ.get('DB_ADDRESS')}:3306/{os.environ.get('DB_NAME')}",
     'YOOKASSA_TOKEN': os.environ.get('YOOKASSA_TOKEN'),
     'YOOKASSA_SHOPID': os.environ.get('YOOKASSA_SHOPID'),
+    'YOOKASSA_ACCOUNT_ID': os.environ.get('YOOKASSA_ACCOUNT_ID'),
     'EMAIL': os.environ.get('EMAIL'),
     'CRYPTO_TOKEN': os.environ.get('CRYPTO_TOKEN'),
     'MERCHANT_UUID': os.environ.get('MERCHANT_UUID'),

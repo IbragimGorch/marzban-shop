@@ -27,6 +27,7 @@ YOOKASSA_IPS = (
 )
 
 async def check_yookassa_payment(request: Request):
+    logging.info("YooKassa webhook received: %s", await request.text())
     client_ip = request.headers.get('CF-Connecting-IP') or request.headers.get('X-Real-IP') or request.headers.get('X-Forwarded-For') or request.remote
     f = True
     for subnet in YOOKASSA_IPS:
@@ -44,7 +45,7 @@ async def check_yookassa_payment(request: Request):
     payment = await get_yookassa_payment(data['id'])
     if payment == None:
         return web.Response()
-    if data['status'] == ['succeeded']:
+    if data['status'] == 'succeeded':
         good = goods.get(payment.callback)
         user = await get_marzban_profile_db(payment.tg_id)
         result = await marzban_api.generate_marzban_subscription(user.vpn_id, good)
@@ -56,4 +57,4 @@ async def check_yookassa_payment(request: Request):
             reply_markup=get_main_menu_keyboard(payment.lang)
         )
         await delete_payment(payment.payment_id)
-    return web.Response()
+        return web.Response(status=200)

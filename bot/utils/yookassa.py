@@ -1,46 +1,69 @@
-from yookassa import Configuration
-from yookassa import Payment
-
+from yookassa import Configuration, Payment
 from db.methods import add_yookassa_payment
 from utils import goods
 import glv
+import logging
 
-if glv.config['YOOKASSA_SHOPID'] and glv.config['YOOKASSA_TOKEN']:
-    Configuration.configure(glv.config['YOOKASSA_SHOPID'], glv.config['YOOKASSA_TOKEN'])
 
-async def create_payment(tg_id: int, callback: str, chat_id: int, lang_code: str) -> dict:
+shop_id = glv.config['YOOKASSA_SHOPID']
+secret_key = glv.config['YOOKASSA_TOKEN']
+logging.info(f"→ YooKassa.configure(shop_id={shop_id!r}, secret={'***' if secret_key else None})")
+Configuration.configure(shop_id, secret_key)
+
+async def create_payment(tg_id: int,
+                         callback: str,
+                         chat_id: int,
+                         lang_code: str,
+                         email: str 
+                        ) -> dict:
+    """
+    Создает платёж в YooKassa, сохраняет его в БД и возвращает сумму и ссылку для оплаты.
+    Если указан email, добавляет чек с email покупателя.
+    """
     good = goods.get(callback)
-    resp = Payment.create({
+
+        # build a static return_url once
+    bot_user = await glv.bot.get_me()
+    return_url = f"https://t.me/{bot_user.username}"
+
+    # create a new payment
+    payment = Payment.create({
         "amount": {
-            "value": good['price']['ru'],
+            "value":    str(good['price']['ru']),  # must be a string
             "currency": "RUB"
         },
         "confirmation": {
-            "type": "redirect",
-            "return_url": f"https://t.me/{(await glv.bot.get_me()).username}"
+            "type":       "redirect",
+            "return_url": return_url
         },
-        "capture": True,
+        "capture":  True,
         "description": f"Подписка на VPN {glv.config['SHOP_NAME']}",
         "save_payment_method": False,
         "receipt": {
-            "customer": {
-                "email": glv.config['EMAIL']
-            },
-            "items": [
-                {
-                    "description": f"Подписка на VPN сервис: кол-во месяцев - {good['months']}",
-                    "quantity": "1",
-                    "amount": {
-                        "value": good['price']['ru'],
-                        "currency": "RUB"
-                    },
-                    "vat_code": "1"
+            "customer": {"email": email},
+            "items": [{
+                "description": f"{good['months']} мес. подписка",
+                "quantity":    "1",
+                "amount": {
+                    "value":    str(good['price']['ru']),
+                    "currency": "RUB"
                 },
-            ]
+                "vat_code": "1"
+            }]
         }
-        })
-    await add_yookassa_payment(tg_id, callback, chat_id, lang_code, resp.id)
+    })
+
+    # persist to your DB
+    await add_yookassa_payment(
+        tg_id=tg_id,
+        callback=callback,
+        chat_id=chat_id,
+        lang_code=lang_code,
+        payment_id=payment.id
+    )
+
+    # return exactly what your handlers need
     return {
-        "url": resp.confirmation.confirmation_url,
-        "amount": resp.amount.value
+        "amount": payment.amount.value,
+        "url":    payment.confirmation.confirmation_url
     }

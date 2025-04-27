@@ -6,26 +6,14 @@ from db.methods import get_marzban_profile_db
 import glv
 
 PROTOCOLS = {
-    "vmess": [
-        {},
-        ["VMess TCP"]
-    ],
+    
     "vless": [
         {
             "flow": "xtls-rprx-vision"
         },
         ["VLESS TCP REALITY"]
     ],
-    "trojan": [
-        {},
-        ["Trojan Websocket TLS"]
-    ],
-    "shadowsocks": [
-        {
-            "method": "chacha20-ietf-poly1305"
-        },
-        ["Shadowsocks TCP"]
-    ]
+    
 }
 
 class Marzban:
@@ -118,7 +106,7 @@ async def generate_test_subscription(username: str):
     if res:
         user = await panel.get_user(username)
         user['status'] = 'active'
-        if user['expire'] < time.time():
+        if not user.get('expire') or user['expire'] < time.time():
             user['expire'] = get_test_subscription(glv.config['PERIOD_LIMIT'])
         else:
             user['expire'] += get_test_subscription(glv.config['PERIOD_LIMIT'], True)
@@ -140,11 +128,15 @@ async def generate_marzban_subscription(username: str, good):
     if res:
         user = await panel.get_user(username)
         user['status'] = 'active'
-        if user['expire'] < time.time():
+        expire = user.get('expire')
+
+        if not expire or expire < time.time():
             user['expire'] = get_subscription_end_date(good['months'])
         else:
             user['expire'] += get_subscription_end_date(good['months'], True)
+
         result = await panel.modify_user(username, user)
+        
     else:
         user = {
             'username': username,
@@ -164,14 +156,42 @@ def get_subscription_end_date(months: int, additional = False) -> int:
     return (0 if additional else int(time.time())) + 60 * 60 * 24 * 30 * months
 
 async def find_user_by_last4(last4: str) -> dict | None:
-    """
-    Search all users in Marzban panel and return first whose username ends with last4 digits.
-    """
-    # get token if not yet
-    if not hasattr(panel, "token"):
+    # Ensure we have a token
+    if not hasattr(panel, "token") or not panel.token:
         panel.get_token()
-    users = await panel.get_users()  # list of user dicts
-    for u in users:
-        if isinstance(u.get("username"), str) and u["username"].endswith(last4):
-            return u
+
+    # Fetch the raw response
+    try:
+        raw = await panel.get_users()
+    except Exception:
+        logging.exception("Error fetching users from panel")
+        raise
+
+    # Unwrap the list of user entries under the "users" key
+    if isinstance(raw, dict):
+        users = raw.get("users", [])
+    elif isinstance(raw, list):
+        users = raw
+    else:
+        users = []
+
+    # Iterate over each entry
+    for entry in users:
+        # Extract username
+        if isinstance(entry, dict):
+            username = entry.get("username")
+        else:
+            username = entry
+
+        if not isinstance(username, str):
+            continue
+
+        # Match last 4 digits
+        if username.endswith(last4):
+            try:
+                return await panel.get_user(username)
+            except Exception:
+                logging.exception(f"Error fetching user {username}")
+                raise
+
     return None

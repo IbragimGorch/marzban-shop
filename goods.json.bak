@@ -1,0 +1,5 @@
+[
+  {"title": "1 month – $5", "price": {"en": 5, "ru": 350}, "callback": "m1", "months": 1},
+  {"title": "2 months – $9", "price": {"en": 9, "ru": 630}, "callback": "m2", "months": 2},
+  {"title": "6 months – $25", "price": {"en": 25, "ru": 1750}, "callback": "m6", "months": 6}
+]
