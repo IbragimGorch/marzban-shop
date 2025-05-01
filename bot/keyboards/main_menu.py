@@ -8,11 +8,10 @@ def get_main_menu_keyboard(lang=None) -> ReplyKeyboardMarkup:
     if lang is None:
         kb = [
             [
-                KeyboardButton(text=_("Pay 🏄🏻‍♂️")),
+                KeyboardButton(text="📊 My subscription")
             ],
             [
-                KeyboardButton(text=_("My subscription 👤")),
-                KeyboardButton(text=_("Frequent questions ℹ️"))
+                KeyboardButton(text=_("Pay 🏄🏻‍♂️")),
             ],
             [
                 KeyboardButton(text=_("Support ❤️"))
@@ -25,11 +24,10 @@ def get_main_menu_keyboard(lang=None) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
     kb = [
         [
-            KeyboardButton(text=get_i18n_string("Pay 🏄🏻‍♂️", lang)),
+            KeyboardButton(text=get_i18n_string("📊 My subscription", lang))
         ],
         [
-            KeyboardButton(text=get_i18n_string("My subscription 👤", lang)),
-            KeyboardButton(text=get_i18n_string("Frequent questions ℹ️", lang))
+            KeyboardButton(text=get_i18n_string("Pay 🏄🏻‍♂️", lang)),
         ],
         [
             KeyboardButton(text=get_i18n_string("Support ❤️", lang))

@@ -24,7 +24,11 @@ config = {
     'PANEL_PASS': os.environ.get('PANEL_PASS'),
     'WEBHOOK_URL': os.environ.get('WEBHOOK_URL'),
     'WEBHOOK_PORT': int(os.environ.get('WEBHOOK_PORT')),
-    'RENEW_NOTIFICATION_TIME': str(os.environ.get('RENEW_NOTIFICATION_TIME'))
+    'RENEW_NOTIFICATION_TIME': str(os.environ.get('RENEW_NOTIFICATION_TIME')),
+    'DB_ADDRESS' : os.environ.get('DB_ADDRESS'),
+    'DB_USER' : os.environ.get('DB_USER'),
+    'DB_PASS' : os.environ.get('DB_PASS'),
+    'DB_NAME' : os.environ.get('DB_NAME')
 }
 
 bot: Bot = None

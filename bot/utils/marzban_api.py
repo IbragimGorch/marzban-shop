@@ -1,8 +1,9 @@
 import time
 import aiohttp
 import requests
+import logging
 
-from db.methods import get_marzban_profile_db
+from app.database import get_user
 import glv
 
 PROTOCOLS = {
@@ -31,6 +32,9 @@ class Marzban:
                 else:
                     raise Exception(f"Error: {resp.status}; Body: {await resp.text()}; Data: {data}")
     
+
+
+
     def get_token(self) -> str:
         data = {
             "username": self.login,
@@ -95,11 +99,15 @@ async def check_if_user_exists(name: str) -> bool:
         return False
 
 async def get_marzban_profile(tg_id: int):
-    result = await get_marzban_profile_db(tg_id)
-    res = await check_if_user_exists(result.vpn_id)
-    if not res:
+    db_user = get_user(tg_id)
+    if not db_user:
         return None
-    return await panel.get_user(result.vpn_id)
+    vpn_id = db_user['username']
+    try:
+        user = await panel.get_user(vpn_id)
+        return user
+    except Exception:
+        return None
 
 async def generate_test_subscription(username: str):
     res = await check_if_user_exists(username)
@@ -195,3 +203,27 @@ async def find_user_by_last4(last4: str) -> dict | None:
                 raise
 
     return None
+
+async def find_user_by_username(username: str):
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "Authorization": f"Bearer {glv.config['PANEL_PASS']}",
+                "Content-Type": "application/json",
+            }
+            url = f"{glv.config['PANEL_HOST']}/api/users"
+            logging.info(f"?? ??? ????? ? ??????: {url} ? ??????? {glv.config['PANEL_PASS']}")
+
+
+            async with session.get(url, headers=headers, ssl=False) as response:
+                if response.status != 200:
+                
+                    return None
+
+                users = await response.json()
+
+                for user in users:
+                    if user.get("username") == username:
+                        return user
+                        logging.info(f"?? ?????? ?????: {data}")
+
+                return None

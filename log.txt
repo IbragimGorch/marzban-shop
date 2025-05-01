@@ -1,12 +1,1 @@
-compiling catalog locales/en/LC_MESSAGES/bot.po to locales/en/LC_MESSAGES/bot.mo
-compiling catalog locales/ru/LC_MESSAGES/bot.po to locales/ru/LC_MESSAGES/bot.mo
-[*] Waiting 15 seconds for 127.0.0.1:3306
-[+] 127.0.0.1:3306 is available after 0 seconds
-INFO  [alembic.runtime.migration] Context impl MySQLImpl.
-INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
-2025-04-07 18:54:35,967 - DEBUG - Using selector: EpollSelector
-2025-04-07 18:59:36,499 - INFO - Running job Every 5 minutes do update_token() (last run: [never], next run: 2025-04-07 18:59:36)
-2025-04-07 18:59:36,503 - DEBUG - Starting new HTTPS connection (1): shadowpathvpn.ru:8054
-2025-04-07 18:59:37,024 - DEBUG - https://shadowpathvpn.ru:8054 "POST /api/admin/token HTTP/1.1" 200 206
-======== Running on http://0.0.0.0:8443 ========
-(Press CTRL+C to quit)
+permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.49/containers/marzban-shop-bot-1/json": dial unix /var/run/docker.sock: connect: permission denied

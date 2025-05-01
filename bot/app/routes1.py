@@ -2,7 +2,6 @@ import logging
 import ipaddress
 from aiohttp import web
 from aiohttp.web_request import Request
-from datetime import datetime
 
 import glv
 from utils import goods, marzban_api
@@ -10,7 +9,7 @@ from utils.lang import get_i18n_string
 from keyboards.main_menu import get_main_menu_keyboard
 from db.methods import get_yookassa_payment, delete_payment
 from utils.marzban_api import get_marzban_profile
-from app.database import get_user, reset_user_notifications  # <-- ?? ????? ??????? telegram_users
+from app.database import get_user  # <-- ?? ????? ??????? telegram_users
 
 YOOKASSA_IPS = [
     "185.71.76.0/27",
@@ -42,31 +41,23 @@ async def check_yookassa_payment(request: Request):
     if payment == None:
         return web.Response()
     if data['status'] == 'succeeded':
-        # Сначала удаляем запись, чтобы при повторной доставке webhook уже не отправлять второй раз
-        await delete_payment(payment.payment_id)
-        reset_user_notifications(payment.tg_id)
-
-
         good = goods.get(payment.callback)
         user = await get_marzban_profile(payment.tg_id)
         result = await marzban_api.generate_marzban_subscription(user['username'], good)
-        text = get_i18n_string(
-            "Thank you for your choice ❤️\n️\n"
-            "<a href=\"{link}\">Subscribe</a> so you don't miss any announcements ✅\n️\n"
-            "Your subscription is purchased and available in \"My subscription 👤\".",
-            payment.lang
-        )
-        await glv.bot.send_message(
-            payment.chat_id,
-            text.format(link=glv.config['PANEL_GLOBAL'] + result['subscription_url']),
+        text = get_i18n_string("Thank you for your choice ❤️\n️\n<a href=\"{link}\">Subscribe</a> so you don't miss any announcements ✅\n️\nYour subscription is purchased and available in \"My subscription 👤\".", payment.lang)
+        await glv.bot.send_message(payment.chat_id,
+            text.format(
+                link=glv.config['PANEL_GLOBAL'] + result['subscription_url']
+            ),
             reply_markup=get_main_menu_keyboard(payment.lang)
         )
+        await delete_payment(payment.payment_id)
         return web.Response(status=200)
-    if payment and payment.chat_id:
+    if user_telegram_id:
         try:
             new_expire_date = datetime.fromtimestamp(user['expire'])
-            await glv.bot.send_message(
-                payment.chat_id,
+            await bot.send_message(
+                user_telegram_id,
                 f"✅ {bold('Подписка продлена!')}\n"
                 f"Теперь активна до: {new_expire_date.strftime('%d.%m.%Y %H:%M')}"
             )

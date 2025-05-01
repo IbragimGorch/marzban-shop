@@ -119,6 +119,10 @@ msgstr ""
 msgid "YooKassa - {price}₽"
 msgstr ""
 
+
+msgid "📊 My subscription"
+msgstr ""
+
 #: bot/tasks/notify_expired.py:22
 msgid ""
 "Hello, {name} 👋🏻\n"

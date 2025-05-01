@@ -1,9 +1,15 @@
 import json
 
+def load_goods() -> list:
+    try:
+        with open("goods.json", encoding="utf-8") as file:
+            return json.load(file)
+    except UnicodeDecodeError:
+        with open("goods.json", encoding="cp1252") as file:
+            return json.load(file)
+
 def get(callback=None) -> list | dict:
-    # goods.json is encoded in Windows-1252 (0x96 = en-dash)
-    with open("goods.json", encoding="cp1252") as file:        
-        data = json.load(file)
+    data = load_goods()
     if callback is None:
         return data
     for v in data:
@@ -12,7 +18,5 @@ def get(callback=None) -> list | dict:
     return dict()
 
 def get_callbacks() -> list:
-    with open("goods.json") as file:
-        data = json.load(file)
-    res = [x['callback'] for x in data]
-    return res
+    data = load_goods()
+    return [x['callback'] for x in data]

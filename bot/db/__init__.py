@@ -1,2 +1,2 @@
 from .base import Base
-from .models import VPNUsers
+#from .models import VPNUsers

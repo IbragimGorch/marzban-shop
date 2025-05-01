@@ -3,10 +3,10 @@ from aiogram import Dispatcher
 from aiogram.types import Message
 from aiogram.utils.i18n import gettext as _
 from aiogram.utils.i18n import lazy_gettext as __
-
 from .commands import start
+
 from keyboards import get_buy_menu_keyboard, get_back_keyboard, get_main_menu_keyboard, get_subscription_keyboard
-from db.methods import can_get_test_sub, update_test_subscription_state, get_marzban_profile_db
+from app.database import get_user
 from utils import marzban_api
 import glv
 
@@ -18,7 +18,7 @@ async def buy(message: Message):
 
 @router.message(F.text == __("My subscription 👤"))
 async def profile(message: Message):
-    user = await marzban_api.get_marzban_profile(message.from_user.id)
+    user = get_user(message.from_user.id)
     if user is None:
         await message.answer(_("Your profile is not active at the moment.\n️\nYou can choose \"1 day free 🆓\" or \"Pay 🏄🏻‍♂️\"."), reply_markup=get_main_menu_keyboard())
         return
