@@ -8,7 +8,7 @@ def get_main_menu_keyboard(lang=None) -> ReplyKeyboardMarkup:
     if lang is None:
         kb = [
             [
-                KeyboardButton(text="📊 My subscription")
+                KeyboardButton(text=_("📊 My subscription"))
             ],
             [
                 KeyboardButton(text=_("Pay 🏄🏻‍♂️")),

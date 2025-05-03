@@ -30,6 +30,32 @@ config = {
     'DB_PASS' : os.environ.get('DB_PASS'),
     'DB_NAME' : os.environ.get('DB_NAME')
 }
+config["NODES"] = [
+    {
+        "name": "main-node",  # сервер с панелью и ботом
+        "host": config["PANEL_HOST"],
+        "global": "191.96.94.65",  # 🔥 укажи IP/домен самого сервера
+        "username": config["PANEL_USER"],
+        "password": config["PANEL_PASS"],
+        "inbound_tag": "VLESS TCP REALITY MAIN"
+    },
+    {
+        "name": "Amsterdam node",
+        "host": config["PANEL_HOST"],  # у всех нод одна панель
+        "global": "94.142.136.101",
+        "username": config["PANEL_USER"],
+        "password": config["PANEL_PASS"],
+        "inbound_tag": "VLESS TCP REALITY NODE-1"
+    },
+    {
+        "name": "Frankfurt1 node",
+        "host": config["PANEL_HOST"],
+        "global": "191.96.94.93",
+        "username": config["PANEL_USER"],
+        "password": config["PANEL_PASS"],
+        "inbound_tag": "VLESS TCP REALITY NODE-2"
+    }
+]
 
 bot: Bot = None
 storage = None

@@ -1,24 +1,7 @@
-from sqlalchemy import Column, BigInteger, String, Boolean, Integer, Enum, DateTime, JSON, ForeignKey, Text
+from sqlalchemy import Column, BigInteger, String, Integer, Enum, DateTime, Boolean
 
 from db.base import Base
 
-#class VPNUsers(Base):
-#    __tablename__ = "vpnusers"
-#    id = Column(BigInteger, primary_key=True, unique=True, autoincrement=True)
-#    tg_id = Column(BigInteger)
-#    vpn_id = Column(String(64), default="")
-#    test = Column(Boolean, default=False)
-
-class CPayments(Base):
-    __tablename__ = "crypto_payments"
-
-    id = Column(BigInteger, primary_key=True, unique=True, autoincrement=True)
-    tg_id = Column(BigInteger)
-    lang = Column(String(64))
-    payment_uuid = Column(String(64))
-    order_id = Column(String(64))
-    chat_id = Column(BigInteger)
-    callback = Column(String(64))
 
 class YPayments(Base):
     __tablename__ = "yookassa_payments"
@@ -52,3 +35,15 @@ class Users(Base):
     on_hold_expire_duration = Column(BigInteger)
     auto_delete_in_days = Column(Integer)
     last_status_change = Column(DateTime)
+
+class TelegramUsers(Base):
+    __tablename__ = "telegram_users"
+
+    id = Column(Integer, primary_key=True)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)
+    username = Column(String(34), nullable=False)
+    subscription_url = Column(String(255))
+    email = Column(String(255))
+    notified_24h = Column(Boolean, default=False)
+    notified_3h = Column(Boolean, default=False)
+    node = Column(String(64))  

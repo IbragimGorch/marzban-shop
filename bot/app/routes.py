@@ -9,8 +9,9 @@ from utils import goods, marzban_api
 from utils.lang import get_i18n_string
 from keyboards.main_menu import get_main_menu_keyboard
 from db.methods import get_yookassa_payment, delete_payment
-from utils.marzban_api import get_marzban_profile
-from app.database import get_user, reset_user_notifications  # <-- ?? ????? ??????? telegram_users
+from utils.marzban_api import get_marzban_profile, generate_marzban_subscription
+from app.database import get_user, reset_user_notifications, get_telegram_id_by_username
+
 
 YOOKASSA_IPS = [
     "185.71.76.0/27",
@@ -42,26 +43,36 @@ async def check_yookassa_payment(request: Request):
     if payment == None:
         return web.Response()
     if data['status'] == 'succeeded':
-        # Сначала удаляем запись, чтобы при повторной доставке webhook уже не отправлять второй раз
         await delete_payment(payment.payment_id)
         reset_user_notifications(payment.tg_id)
 
-
         good = goods.get(payment.callback)
-        user = await get_marzban_profile(payment.tg_id)
-        result = await marzban_api.generate_marzban_subscription(user['username'], good)
+        telegram_user = get_user(payment.tg_id)
+        if not telegram_user:
+            raise Exception("Telegram user not found")
+
+        username = telegram_user["username"]
+        tg_id = telegram_user["telegram_id"]
+
+        # 1) Генерим новую ссылку и сохраняем в telegram_users
+        result = await generate_marzban_subscription(username, good, tg_id)
+
+        # 2) Формируем текст один раз
         text = get_i18n_string(
-            "Thank you for your choice ❤️\n️\n"
-            "<a href=\"{link}\">Subscribe</a> so you don't miss any announcements ✅\n️\n"
+            "Thank you for your choice ❤️\n\n"
+            "<a href=\"{link}\">Subscribe</a> so you don't miss any announcements ✅\n\n"
             "Your subscription is purchased and available in \"My subscription 👤\".",
             payment.lang
         )
+
+        # 3) Шлём сообщение с новой ссылкой
         await glv.bot.send_message(
             payment.chat_id,
-            text.format(link=glv.config['PANEL_GLOBAL'] + result['subscription_url']),
+            text.format(link=result["subscription_url"]),
             reply_markup=get_main_menu_keyboard(payment.lang)
         )
         return web.Response(status=200)
+
     if payment and payment.chat_id:
         try:
             new_expire_date = datetime.fromtimestamp(user['expire'])

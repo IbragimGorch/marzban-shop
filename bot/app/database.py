@@ -68,6 +68,14 @@ def mark_user_notified(tg_id: int, field: str):
         cursor.execute(f"UPDATE telegram_users SET {field} = TRUE WHERE telegram_id = %s", (tg_id,))
 
 
+def get_telegram_id_by_username(username: str):
+    with connection.cursor() as cursor:
+        sql = "SELECT telegram_id FROM telegram_users WHERE username = %s"
+        cursor.execute(sql, (username,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+
+
 # Получить всех пользователей
 def get_all_users():
     with connection.cursor() as cursor:

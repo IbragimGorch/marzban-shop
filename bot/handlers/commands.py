@@ -22,3 +22,4 @@ async def start(message: Message):
 
 def register_commands(dp: Dispatcher):
     dp.include_router(router)
+

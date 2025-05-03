@@ -9,6 +9,7 @@ class EmailState(StatesGroup):
 import asyncio
 import logging
 import sys
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +18,8 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.i18n import I18n, SimpleI18nMiddleware
+from aiogram.utils.i18n import gettext as _
+from aiogram.utils.i18n import lazy_gettext as __
 from aiohttp import web
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from db.methods import (
@@ -32,6 +35,8 @@ from keyboards.main_menu import get_main_menu_keyboard
 from keyboards.pay import get_pay_keyboard
 from app.routes import check_yookassa_payment
 from app.database import save_user, get_user, get_all_users, mark_user_notified
+
+
 import glv
 
 # Инициализация логирования
@@ -51,6 +56,7 @@ dp.update.middleware(i18n_middleware)
 
 router = Router()
 dp.include_router(router)
+
 active_panels = {}
 
 
@@ -61,6 +67,7 @@ from handlers.callbacks import register_callbacks
 register_commands(dp)
 register_messages(dp)
 register_callbacks(dp)
+
 
 print(">>> Бот стартанул!!! <<<", flush=True)
 logging.info(">>> Логгер бот стартанул <<<")
@@ -148,7 +155,7 @@ def build_panel_text(vpn_user: dict) -> str:
         f"⚡ Статус: <b>{status}</b>\n"
     )
 
-@router.message(F.text == "📊 My subscription")
+@router.message(F.text == __("📊 My subscription"))
 async def handle_my_panel_button(message: types.Message, state: FSMContext):
     await send_panel(message, state)
 #

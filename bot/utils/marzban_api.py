@@ -2,8 +2,12 @@ import time
 import aiohttp
 import requests
 import logging
+import uuid
+import json
 
 from app.database import get_user
+from utils.nodes import NodeManager
+from db.methods import update_telegram_user_node
 import glv
 
 PROTOCOLS = {
@@ -131,31 +135,29 @@ async def generate_test_subscription(username: str):
         result = await panel.add_user(user)
     return result
 
-async def generate_marzban_subscription(username: str, good):
-    res = await check_if_user_exists(username)
-    if res:
-        user = await panel.get_user(username)
-        user['status'] = 'active'
-        expire = user.get('expire')
+async def generate_marzban_subscription(username: str, good, tg_id: int):
+    # choose best node
+    nm = NodeManager(glv.config["NODES"])
+    best = await nm.choose_best_node()
 
-        if not expire or expire < time.time():
-            user['expire'] = get_subscription_end_date(good['months'])
-        else:
-            user['expire'] += get_subscription_end_date(good['months'], True)
+    # tell panel to put user on that inbound
+    await migrate_user_to_node(username, best, tg_id)
 
-        result = await panel.modify_user(username, user)
-        
-    else:
-        user = {
-            'username': username,
-            'proxies': ps["proxies"],
-            'inbounds': ps["inbounds"],
-            'expire': get_subscription_end_date(good['months']),
-            'data_limit': 0,
-            'data_limit_reset_strategy': "no_reset",
-        }
-        result = await panel.add_user(user)
-    return result
+    # fetch updated user to read panel’s subscription_url
+    updated = await panel.get_user(username)
+    path = updated["subscription_url"]  # e.g. "/sub/…"
+    full_url = f"{best['global']}{path}"
+
+    # save into telegram_users
+    await update_telegram_user_node(tg_id, best["name"], full_url)
+
+    return {
+      "subscription_url": full_url,
+      "node": best["name"]
+    }
+
+
+    
 
 def get_test_subscription(hours: int, additional= False) -> int:
     return (0 if additional else int(time.time())) + 60 * 60 * hours
@@ -204,6 +206,29 @@ async def find_user_by_last4(last4: str) -> dict | None:
 
     return None
 
+async def migrate_user_to_node(username: str, new_node: dict, tg_id: int):
+    panel = Marzban(
+        glv.config["PANEL_HOST"],
+        glv.config["PANEL_USER"],
+        glv.config["PANEL_PASS"]
+    )
+    panel.get_token()
+
+    user = await panel.get_user(username)
+
+    # *** Replace user["inbounds"]["vless"] list with the chosen tag ***
+    user_inbounds = user.get("inbounds", {})
+    # For vless protocol:
+    user_inbounds["vless"] = [ new_node["inbound_tag"] ]
+    user["inbounds"] = user_inbounds
+
+    await panel.modify_user(username, user)
+    print(f"✅ {username} now uses inbound «{new_node['inbound_tag']}»")
+
+
+
+
+
 async def find_user_by_username(username: str):
         async with aiohttp.ClientSession() as session:
             headers = {
@@ -224,6 +249,5 @@ async def find_user_by_username(username: str):
                 for user in users:
                     if user.get("username") == username:
                         return user
-                        logging.info(f"?? ?????? ?????: {data}")
 
                 return None
