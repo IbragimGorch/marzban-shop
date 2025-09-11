@@ -9,7 +9,9 @@ from utils import goods, marzban_api
 from utils.lang import get_i18n_string
 from keyboards.main_menu import get_main_menu_keyboard
 from db.methods import get_yookassa_payment, delete_payment
-from utils.marzban_api import get_marzban_profile, generate_marzban_subscription
+from utils.marzban_api import (
+    get_marzban_profile, generate_marzban_subscription, generate_subscription_link, extend_user_expire
+)
 from app.database import get_user, reset_user_notifications, get_telegram_id_by_username
 
 
@@ -54,8 +56,13 @@ async def check_yookassa_payment(request: Request):
         username = telegram_user["username"]
         tg_id = telegram_user["telegram_id"]
 
-        # 1) Генерим новую ссылку и сохраняем в telegram_users
-        result = await generate_marzban_subscription(username, good, tg_id)
+        # 1) Генерим новую ссылку (без нодов) и сохраняем в telegram_users
+        full_url = await generate_subscription_link(username)
+        from db.methods import update_telegram_user_subscription
+        await update_telegram_user_subscription(tg_id, full_url)
+
+        months = int(good.get("months", 1))
+        new_expire = await extend_user_expire(username, months)
 
         # 2) Формируем текст один раз
         text = get_i18n_string(
@@ -68,18 +75,18 @@ async def check_yookassa_payment(request: Request):
         # 3) Шлём сообщение с новой ссылкой
         await glv.bot.send_message(
             payment.chat_id,
-            text.format(link=result["subscription_url"]),
+            text.format(link=full_url),
             reply_markup=get_main_menu_keyboard(payment.lang)
         )
         return web.Response(status=200)
 
-    if payment and payment.chat_id:
-        try:
-            new_expire_date = datetime.fromtimestamp(user['expire'])
-            await glv.bot.send_message(
-                payment.chat_id,
-                f"✅ {bold('Подписка продлена!')}\n"
-                f"Теперь активна до: {new_expire_date.strftime('%d.%m.%Y %H:%M')}"
-            )
-        except Exception as e:
-            logging.error(f"Ошибка отправки уведомления о продлении: {e}")
+    #if payment and payment.chat_id:
+    #    try:
+    #        new_expire_date = datetime.fromtimestamp(user['expire'])
+    #        await glv.bot.send_message(
+    #            payment.chat_id,
+    #            f"✅ {bold('Подписка продлена!')}\n"
+    #            f"Теперь активна до: {new_expire_date.strftime('%d.%m.%Y %H:%M')}"
+    #        )
+    #    except Exception as e:
+    #        logging.error(f"Ошибка отправки уведомления о продлении: {e}")

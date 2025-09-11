@@ -1,25 +1,18 @@
-from sqlalchemy import text
-from db.base import engine
+# utils/nodes.py
+from typing import Optional
 
 class NodeManager:
-    def __init__(self, cfg_nodes):
-        self.cfg_nodes = cfg_nodes
+    """
+    Заглушка. Больше не выбираем ноды из БД.
+    """
+
+    def __init__(self, default_node: Optional[str] = None):
+        self.default_node = default_node
 
     async def get_nodes_from_db(self):
-        async with engine.connect() as conn:
-            result = await conn.execute(text("""
-                SELECT name, uplink+downlink AS total_traffic
-                FROM nodes
-                WHERE status = 'connected'
-                ORDER BY total_traffic ASC
-            """))
-            return [dict(r._mapping) for r in result]
+        # Раньше ходили в marzban_shop.nodes; теперь — нет
+        return []
 
-    async def choose_best_node(self):
-        db_nodes = await self.get_nodes_from_db()
-        # матчим по имени
-        for dbn in db_nodes:
-            for cfg in self.cfg_nodes:
-                if cfg["name"] == dbn["name"]:
-                    return cfg
-        return self.cfg_nodes[0]  # fallback
+    async def choose_best_node(self) -> Optional[str]:
+        # Возвращаем дефолт (если задан) или None — панель сама разберётся
+        return self.default_node

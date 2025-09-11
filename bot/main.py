@@ -33,6 +33,7 @@ from utils.marzban_api import find_user_by_last4, find_user_by_username
 from utils.yookassa import create_payment as yk_create_payment
 from keyboards.main_menu import get_main_menu_keyboard
 from keyboards.pay import get_pay_keyboard
+from keyboards.plans import get_plans_keyboard
 from app.routes import check_yookassa_payment
 from app.database import save_user, get_user, get_all_users, mark_user_notified
 
@@ -208,6 +209,19 @@ async def process_email(message: types.Message, state: FSMContext):
         email=email
     )
 
+    data = await state.get_data()
+    chosen_callback = data.get("chosen_callback")
+
+    # fallback: если по какой-то причине тариф не выбран — берём первый доступный
+    if not chosen_callback:
+        from utils import goods as goods_mod
+        callbacks = goods_mod.get_callbacks()
+        chosen_callback = callbacks[0] if callbacks else None
+    
+    if not chosen_callback:
+        await message.answer("❌ Не удалось определить тариф. Попробуйте ещё раз: нажмите «Купить подписку».")
+        await state.clear()
+        return
     payment = await yk_create_payment(
         tg_id=message.from_user.id,
         callback="m1",
@@ -224,9 +238,24 @@ async def process_email(message: types.Message, state: FSMContext):
 
 @router.callback_query(F.data == "buy_subscription")
 async def buy_subscription(callback_query: types.CallbackQuery, state: FSMContext):
-    await callback_query.message.answer("📧 Введите ваш email для оплаты подписки:")
+    # шаг 1: показать тарифы
+    await callback_query.message.answer(
+        "🛒 Выберите тариф:",
+        reply_markup=get_plans_keyboard()
+    )
+    await callback_query.answer()
+
+@router.callback_query(F.data.startswith("plan:"))
+async def choose_plan(callback_query: types.CallbackQuery, state: FSMContext):
+    chosen_callback = callback_query.data.split("plan:", 1)[1]
+
+    # сохраним выбранный тариф
+    await state.update_data(chosen_callback=chosen_callback)
+
+    await callback_query.message.answer("📧 Пожалуйста, введите ваш email для отправки чека:")
     await state.set_state(EmailState.waiting_for_email)
     await callback_query.answer()
+
 
 
 @router.callback_query(F.data == "my_subscription")
@@ -281,14 +310,14 @@ async def notify_users_about_expiry():
 
 
 async def on_startup(bot: Bot):
-    webhook_url = f"{glv.config['WEBHOOK_URL']}/webhook"
+    webhook_url = f"{glv.config['WEBHOOK_URL']}/webhook/9f8a0b3e7f4c1a4d5b8c7d8e9f0a1b2c"
     await bot.set_webhook(url=webhook_url)
     logging.info(f"Webhook set to {webhook_url}")
 
 async def main():
     await on_startup(bot)
 
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
+    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook/9f8a0b3e7f4c1a4d5b8c7d8e9f0a1b2c")
     app.router.add_post("/yookassa_payment", check_yookassa_payment)
 
     setup_application(app, dp, bot=bot)

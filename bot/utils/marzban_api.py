@@ -6,8 +6,7 @@ import uuid
 import json
 
 from app.database import get_user
-from utils.nodes import NodeManager
-from db.methods import update_telegram_user_node
+from db.methods import update_telegram_user_subscription
 import glv
 
 PROTOCOLS = {
@@ -135,26 +134,59 @@ async def generate_test_subscription(username: str):
         result = await panel.add_user(user)
     return result
 
+async def generate_subscription_link(username: str) -> str:
+    """
+    Возвращает ПОЛНУЮ ссылку подписки (PANEL_HOST + subscription_url) без миграций/нодов.
+    """
+    if not hasattr(panel, "token") or not panel.token:
+        panel.get_token()
+    user = await panel.get_user(username)
+    path = user.get("subscription_url")
+    if not path:
+        raise Exception("Panel response has no 'subscription_url'")
+    return f"{glv.config['PANEL_HOST']}{path}"
+
+async def extend_user_expire(username: str, months: int) -> int:
+    """
+    Продлевает срок действия пользователя в панели на N месяцев (30 дней * N).
+    Возвращает новое значение expire (Unix time).
+    (Эту функцию можно вызывать по событию оплаты, когда захочешь.)
+    """
+    if not hasattr(panel, "token") or not panel.token:
+        panel.get_token()
+    now = int(time.time())
+    add_seconds = 60 * 60 * 24 * 30 * int(months or 1)
+    exists = await check_if_user_exists(username)
+    if exists:
+        user = await panel.get_user(username)
+        current_expire = int(user.get("expire") or 0)
+        base = now if current_expire < now else current_expire
+        user["expire"] = base + add_seconds
+        user["status"] = "active"
+        user["data_limit_reset_strategy"] = user.get("data_limit_reset_strategy", "no_reset")
+        await panel.modify_user(username, user)
+        updated = await panel.get_user(username)
+        return int(updated.get("expire") or 0)
+    else:
+        new_user = {
+            "username": username,
+            "proxies": ps["proxies"],
+            "inbounds": ps["inbounds"],
+            "expire": now + add_seconds,
+            "data_limit": 0,
+            "data_limit_reset_strategy": "no_reset",
+            "status": "active",
+        }
+        await panel.add_user(new_user)
+        created = await panel.get_user(username)
+        return int(created.get("expire") or 0)
+
+# Тонкий враппер для обратной совместимости — теперь только формирует ссылку и сохраняет её в telegram_users.
 async def generate_marzban_subscription(username: str, good, tg_id: int):
-    # choose best node
-    nm = NodeManager(glv.config["NODES"])
-    best = await nm.choose_best_node()
-
-    # tell panel to put user on that inbound
-    await migrate_user_to_node(username, best, tg_id)
-
-    # fetch updated user to read panel’s subscription_url
-    updated = await panel.get_user(username)
-    path = updated["subscription_url"]  # e.g. "/sub/…"
-    full_url = f"{best['global']}{path}"
-
-    # save into telegram_users
-    await update_telegram_user_node(tg_id, best["name"], full_url)
-
-    return {
-      "subscription_url": full_url,
-      "node": best["name"]
-    }
+    link = await generate_subscription_link(username)
+    await update_telegram_user_subscription(tg_id, link)
+    logging.info(f"🔗 subscription link updated for {username}: {link}")
+    return {"subscription_url": link, "node": None}
 
 
     
@@ -206,24 +238,24 @@ async def find_user_by_last4(last4: str) -> dict | None:
 
     return None
 
-async def migrate_user_to_node(username: str, new_node: dict, tg_id: int):
-    panel = Marzban(
-        glv.config["PANEL_HOST"],
-        glv.config["PANEL_USER"],
-        glv.config["PANEL_PASS"]
-    )
-    panel.get_token()
-
-    user = await panel.get_user(username)
-
-    # *** Replace user["inbounds"]["vless"] list with the chosen tag ***
-    user_inbounds = user.get("inbounds", {})
-    # For vless protocol:
-    user_inbounds["vless"] = [ new_node["inbound_tag"] ]
-    user["inbounds"] = user_inbounds
-
-    await panel.modify_user(username, user)
-    print(f"✅ {username} now uses inbound «{new_node['inbound_tag']}»")
+#async def migrate_user_to_node(username: str, new_node: dict, tg_id: int):
+#    panel = Marzban(
+#        glv.config["PANEL_HOST"],
+#        glv.config["PANEL_USER"],
+#        glv.config["PANEL_PASS"]
+#    )
+#    panel.get_token()
+#
+#    user = await panel.get_user(username)
+#
+#    # *** Replace user["inbounds"]["vless"] list with the chosen tag ***
+#    user_inbounds = user.get("inbounds", {})
+#    # For vless protocol:
+#    user_inbounds["vless"] = [ new_node["inbound_tag"] ]
+#    user["inbounds"] = user_inbounds
+#
+#    await panel.modify_user(username, user)
+#    print(f"✅ {username} now uses inbound «{new_node['inbound_tag']}»")
 
 
 

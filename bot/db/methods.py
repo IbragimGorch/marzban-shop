@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import insert, select, delete, update
 from db.base import async_session_maker
 from db.models import TelegramUsers
+from typing import Optional
 
 from db.models import YPayments, Users
 import glv
@@ -43,15 +44,30 @@ async def get_telegram_user(tg_id: int):
                                  .where(TelegramUsers.telegram_id == tg_id))
         return res.fetchone()
 
-# обновить ноду и ссылку
-async def update_telegram_user_node(tg_id: int, node_name: str, sub_url: str):
-    sql = (
-      update(TelegramUsers)
-      .where(TelegramUsers.telegram_id == tg_id)
-      .values(node=node_name, subscription_url=sub_url)
-    )
-    await conn.execute(sql)
-    await conn.commit()
+async def update_telegram_user_subscription(tg_id: int, subscription_url: str) -> None:
+    """
+    Обновляет только ссылку подписки у telegram_users по telegram_id.
+    node больше не трогаем (пусть остаётся NULL/как есть).
+    """
+    async with async_engine.begin() as conn:
+        await conn.execute(
+            text("""
+                UPDATE telegram_users
+                SET subscription_url = :url
+                WHERE telegram_id = :tg_id
+            """),
+            {"url": subscription_url, "tg_id": tg_id}
+        )
+
+## обновить ноду и ссылку
+#async def update_telegram_user_node(tg_id: int, node_name: str, sub_url: str):
+#    sql = (
+#      update(TelegramUsers)
+#      .where(TelegramUsers.telegram_id == tg_id)
+#      .values(node=node_name, subscription_url=sub_url)
+#    )
+#    await conn.execute(sql)
+#    await conn.commit()
 
         
 async def get_vpn_user_by_username(username: str) -> Users | None:
