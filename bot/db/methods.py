@@ -1,16 +1,12 @@
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import insert, select, delete, update
-from db.base import async_session_maker
+from sqlalchemy import insert, select, delete, update, text
+from db.base import async_session_maker, engine
 from db.models import TelegramUsers
 from typing import Optional
 
 from db.models import YPayments, Users
 import glv
 
-# ??????????? ? ??
-engine = create_async_engine(glv.config['DB_URL'])
-
-# === ???????? ?????? ? ????????? ===
 
 async def add_yookassa_payment(tg_id: int, callback: str, chat_id: int, lang_code: str, payment_id) -> dict:
     async with engine.connect() as conn:
@@ -44,20 +40,31 @@ async def get_telegram_user(tg_id: int):
                                  .where(TelegramUsers.telegram_id == tg_id))
         return res.fetchone()
 
-async def update_telegram_user_subscription(tg_id: int, subscription_url: str) -> None:
+async def update_telegram_user_subscription(tg_id: int, username: str, subscription_url: str) -> None:
     """
     Обновляет только ссылку подписки у telegram_users по telegram_id.
     node больше не трогаем (пусть остаётся NULL/как есть).
     """
-    async with async_engine.begin() as conn:
-        await conn.execute(
-            text("""
-                UPDATE telegram_users
-                SET subscription_url = :url
-                WHERE telegram_id = :tg_id
-            """),
-            {"url": subscription_url, "tg_id": tg_id}
-        )
+    sql = text("""
+        INSERT INTO telegram_users (telegram_id, username, subscription_url)
+        VALUES (:tg_id, :username, :url)
+        ON DUPLICATE KEY UPDATE
+            subscription_url = VALUES(subscription_url)
+    """)
+    async with engine.begin() as conn:
+        await conn.execute(sql, {"tg_id": tg_id, "username": username, "url": subscription_url})
+#    async with async_session_maker() as session:
+#        await session.execute(
+#            text("""
+#                UPDATE telegram_users
+#                SET subscription_url = :url
+#                WHERE telegram_id = :tg_id
+#            """),
+#            {"url": subscription_url, "tg_id": tg_id}
+#        )
+#        if session.get_bind().dialect.name == "mysql" and session.connection().connection is not None:
+#            pass
+#        await session.commit()
 
 ## обновить ноду и ссылку
 #async def update_telegram_user_node(tg_id: int, node_name: str, sub_url: str):

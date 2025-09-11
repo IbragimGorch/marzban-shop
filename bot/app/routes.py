@@ -59,7 +59,7 @@ async def check_yookassa_payment(request: Request):
         # 1) Генерим новую ссылку (без нодов) и сохраняем в telegram_users
         full_url = await generate_subscription_link(username)
         from db.methods import update_telegram_user_subscription
-        await update_telegram_user_subscription(tg_id, full_url)
+        await update_telegram_user_subscription(tg_id, username, full_url)
 
         months = int(good.get("months", 1))
         new_expire = await extend_user_expire(username, months)
